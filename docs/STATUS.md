@@ -4,6 +4,12 @@ _Last updated: 9 November 2026._
 
 Everything in SPEC §12 has been written. The work was done in a cloud session that could run the database and the login service, but **not** Supabase's data API (PostgREST): the network policy there blocked downloading it. So everything that goes through the data API has been written and type-checked but has **not yet been run**. The checklist below is for the first run on your computer.
 
+## 📌 Open to-dos for you
+
+1. **Switch GitHub's default branch to `master`**: repo **Settings → General → Default branch**. (It is currently `claude/ios-app-feasibility-xlqkyh`, because that was the first branch pushed. Vercel deploys the default branch.) Then delete that branch if you like; it's identical to `master`.
+2. Run the first-run checklist below.
+3. Deploy (README §6).
+
 ## ✅ Verified in the cloud session
 
 | Area | How it was verified |
@@ -18,7 +24,7 @@ Everything in SPEC §12 has been written. The work was done in a cloud session t
 | Signed-out visitors redirected to `/login?next=…` | Real browser. |
 | PWA: manifest, icons, service-worker headers | Real browser + Playwright tests (`manifest…`, `service worker file…`) pass on desktop and phone profiles. |
 | PWA: what gets cached | Real browser: only `/_next/static/*`, `/icons/*` and `/offline`. Logout wipe re-downloads only those. Offline navigation shows the offline page. |
-| Pages render (login, sign-up, reset, join link, offline) | Real browser at iPhone size. |
+| Pages render (login, sign-up, reset, join link, offline) | Real browser at iPhone size; screenshots in [`screenshots/`](screenshots). |
 
 ## ⏳ Written but not yet run (needs the full local stack: run on your computer)
 

@@ -9,6 +9,7 @@ It works on phones and computers and can be **installed on the home screen** lik
 - Product spec: [`SPEC.md`](SPEC.md)
 - Design and privacy rules: [`docs/PLAN.md`](docs/PLAN.md)
 - What has been tested so far, and what still needs a first run on a real computer: [`docs/STATUS.md`](docs/STATUS.md)
+- Phone-size screenshots of the public pages: [`docs/screenshots/`](docs/screenshots)
 
 ---
 

@@ -9,7 +9,7 @@ Status: **built**. All steps written; see [STATUS.md](STATUS.md) for what is ver
    - Soft-delete vs. hard-delete, "edited after claim" flags, and claim races need multi-row logic that must not leak.
    - Error messages can be normalized. For example, a recipient probing a gift id always gets the same generic `not_found`, never a unique-violation that would reveal a claim.
    - A future native/Capacitor client reuses the exact same rules.
-3. **No service-role key in the app.** It is used only by the seed script and test setup.
+3. **No service-role key in the app.** It is used only by the browser-test setup (`tests/e2e/helpers.ts`) to create confirmed test users.
 4. **PWA service worker caches static assets only** (SPEC §9a).
 
 ## 2. Schema notes (beyond SPEC §6)
