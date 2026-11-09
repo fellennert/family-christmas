@@ -1,0 +1,19 @@
+<!--
+  Supabase "Confirm signup" email (only sent if "Confirm email" is switched on).
+  Local: used automatically (supabase/config.toml).
+  Production: paste into Supabase dashboard > Authentication > Emails > Confirm signup.
+
+  {{ .RedirectTo }} is https://<your-site>/auth/confirm?next=... (set by the app).
+-->
+<div style="font-family: Georgia, serif; font-size: 18px; color: #1d1d1b; background: #fbf6ec; padding: 24px;">
+  <h2 style="color: #1f4d3a;">🎄 Welcome to Family Christmas!</h2>
+  <p>Tap the button to confirm your email and finish signing up.</p>
+  <p>
+    <a
+      href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email"
+      style="display: inline-block; background: #1f4d3a; color: #ffffff; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: bold;"
+      >Confirm my email</a
+    >
+  </p>
+  <p style="color: #55534e;">If you didn’t sign up, you can ignore this email.</p>
+</div>

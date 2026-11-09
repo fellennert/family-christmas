@@ -1,0 +1,21 @@
+<!--
+  Supabase "Reset password" email.
+  Local: used automatically (supabase/config.toml).
+  Production: paste into Supabase dashboard > Authentication > Emails > Reset Password.
+
+  {{ .RedirectTo }} is https://<your-site>/auth/confirm?next=/reset-password/update
+  (set by the app). The token_hash is verified on our server, so the link works
+  even if the email is opened on a different device.
+-->
+<div style="font-family: Georgia, serif; font-size: 18px; color: #1d1d1b; background: #fbf6ec; padding: 24px;">
+  <h2 style="color: #1f4d3a;">🎄 Reset your password</h2>
+  <p>Someone (hopefully you) asked to reset the password for your Family Christmas account.</p>
+  <p>
+    <a
+      href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery"
+      style="display: inline-block; background: #1f4d3a; color: #ffffff; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: bold;"
+      >Choose a new password</a
+    >
+  </p>
+  <p style="color: #55534e;">If you didn’t ask for this, you can ignore this email. Your password stays the same.</p>
+</div>

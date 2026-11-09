@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+
+/*
+ * Palette (SPEC §9): deep green, cranberry red, cream background, gold accents.
+ * Text colors meet WCAG AA contrast on cream (most are AAA). Gold is used for
+ * decoration and borders only, never for text.
+ */
+@theme {
+  --color-pine: #1f4d3a;
+  --color-pine-dark: #163a2b;
+  --color-pine-light: #e3efe7;
+  --color-cranberry: #9b1b30;
+  --color-cranberry-dark: #7a1426;
+  --color-cranberry-light: #f8e4e7;
+  --color-cream: #fbf6ec;
+  --color-gold: #c9a227;
+  --color-gold-light: #f6ecc8;
+  --color-ink: #1d1d1b;
+  --color-muted: #55534e;
+  --font-display: Georgia, 'Times New Roman', serif;
+}
+
+/* Larger base size for older relatives: 1rem = 18px. */
+html {
+  font-size: 112.5%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  /* Keep content out from under the notch / home indicator when installed. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* Reusable component classes (Tailwind v4 custom utilities). */
+@utility btn {
+    @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-lg font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@utility btn-primary {
+    @apply btn bg-pine text-white hover:bg-pine-dark;
+}
+
+@utility btn-claim {
+    @apply btn bg-cranberry text-white hover:bg-cranberry-dark;
+}
+
+@utility btn-secondary {
+    @apply btn border-2 border-pine bg-white text-pine hover:bg-pine-light;
+}
+
+@utility btn-danger {
+    @apply btn border-2 border-cranberry bg-white text-cranberry hover:bg-cranberry-light;
+}
+
+@utility btn-link {
+    @apply inline-flex min-h-12 cursor-pointer items-center px-2 text-lg font-semibold text-pine underline underline-offset-4 hover:text-pine-dark;
+}
+
+@utility card {
+    @apply rounded-2xl border border-gold/50 bg-white p-5 shadow-sm;
+}
+
+@utility input {
+    @apply block min-h-12 w-full rounded-xl border-2 border-muted/40 bg-white px-4 py-2.5 text-lg text-ink placeholder:text-muted/70 focus:border-pine focus:outline-none;
+}
+
+@utility label {
+    @apply mb-1.5 block text-lg font-semibold;
+}
+
+@utility hint {
+    @apply mt-1 text-base text-muted;
+}

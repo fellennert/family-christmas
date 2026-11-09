@@ -170,6 +170,8 @@ describe('locked-down access paths', () => {
       expect(await errorCode(asUser(null, `select * from public.${t}`))).toBe('permission');
     }
     expect(await errorCode(rpc(null, 'claim_gift', `'${momBook}'`))).toBe('permission');
+    // The keep-alive ping is the only thing anonymous callers may run.
+    expect(await rpc(null, 'ping')).toBe('ok');
   });
 
   it('signed-in users cannot write tables directly (only via functions)', async () => {

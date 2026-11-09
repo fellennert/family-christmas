@@ -1,0 +1,38 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { friendlyError } from '@/lib/errors';
+import { isUuid } from '@/lib/routes';
+import { createClient } from '@/lib/supabase/server';
+import { fail, ok, type ActionState } from './types';
+
+/**
+ * One action behind the ClaimControl button: op = claim | unclaim | dismiss.
+ * "dismiss" is unclaiming a gift that was removed from the list; the database
+ * then deletes the gift too (see unclaim_gift()).
+ */
+export async function claimOrUnclaim(_: ActionState, form: FormData): Promise<ActionState> {
+  const giftId = form.get('giftId');
+  const op = form.get('op');
+  if (!isUuid(giftId)) return fail(friendlyError('not_found'));
+
+  const supabase = await createClient();
+
+  if (op === 'claim') {
+    const { data, error } = await supabase.rpc('claim_gift', { p_gift_id: giftId });
+    // Refresh even on failure so the page shows who claimed it.
+    revalidatePath('/', 'layout');
+    if (error) return fail(friendlyError(error));
+    if (data === 'already_claimed') return fail('Someone just claimed this. Pick something else!');
+    return ok('You’re getting this! It’s on your shopping list.');
+  }
+
+  if (op === 'unclaim' || op === 'dismiss') {
+    const { error } = await supabase.rpc('unclaim_gift', { p_gift_id: giftId });
+    revalidatePath('/', 'layout');
+    if (error) return fail(friendlyError(error));
+    return ok(op === 'dismiss' ? 'Dismissed.' : 'Unclaimed. Someone else can pick it now.');
+  }
+
+  return fail(friendlyError('invalid_input'));
+}
