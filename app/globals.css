@@ -47,7 +47,7 @@ h3 {
 
 /* Reusable component classes (Tailwind v4 custom utilities). */
 @utility btn {
-    @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-lg font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl text-center px-5 py-2.5 text-lg font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 @utility btn-primary {
