@@ -201,7 +201,7 @@ GitHub also runs everything automatically on each push (`.github/workflows/test.
 
 Both services have free plans that are plenty for a family. Allow about **45 minutes** the first time. Screens on these websites change from time to time; if a button name differs slightly, look for the closest match.
 
-> **Before you start:** the hosting service publishes your **main** branch. If this code is still on another branch (such as `claude/ios-app-feasibility-xlqkyh`), merge it into `main` on GitHub first (open a pull request and merge it).
+> **Before you start:** Vercel publishes the repository's default branch, **`master`**. Make sure the code you want live is on `master`.
 
 ### Step A: Create the Supabase project (the database)
 
@@ -327,7 +327,7 @@ Keep those files somewhere safe (not in the GitHub repository: they contain ever
 
 ### Updating the app
 
-- **Code changes**: push to `main` on GitHub → Vercel publishes automatically within a few minutes.
+- **Code changes**: push to `master` on GitHub → Vercel publishes automatically within a few minutes.
 - **Database changes** (a new file in `supabase/migrations/`): run `npx supabase db push` from your computer.
 - **Service worker changes** (`public/sw.js`): bump `VERSION` at the top of the file so phones drop the old files.
 
