@@ -6,3 +6,5 @@ supabase/.temp/
 supabase/.branches/
 test-results/
 playwright-report/
+next-env.d.ts
+*.tsbuildinfo

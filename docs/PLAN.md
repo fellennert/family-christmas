@@ -1,6 +1,6 @@
 # Implementation plan and RLS design (for review)
 
-Status: **approved**. Step 1 (database layer) is built and tested; see §8.
+Status: **built**. All steps written; see [STATUS.md](STATUS.md) for what is verified and what still needs a first run.
 
 ## 1. Guiding decisions
 
@@ -69,7 +69,8 @@ Consequences:
 ## 6. App structure
 
 - Next.js App Router + TypeScript + Tailwind. `@supabase/ssr` for cookie-based sessions in server components and middleware.
-- Server components read via the user's session. Server actions call the RPCs.
+- Server components read via the user's session (all reads in `lib/data.ts`). Server actions (`app/actions/`) call the RPCs.
+- `proxy.ts` (Next 16's name for middleware) refreshes the session and redirects signed-out visitors.
 - `/me` page queries `gifts` only, with an explicit column list. No join to `claims` exists in that code path, and RLS would return nothing anyway.
 - Delete confirmation on `/me` is the same static dialog for every gift (the page has no claim info to vary on).
 - PWA: `app/manifest.ts`, icons in `public/`, `public/sw.js` (cache-first for `/_next/static/*`, icons, `/offline`; network-only for everything else), registration in a small client component, cache wipe on logout.
@@ -84,10 +85,10 @@ Consequences:
 
 1. ✅ Migrations: schema → helpers → RLS → RPCs. Seed script.
 2. ✅ RLS test suite green (39 tests). **(checkpoint with you)**
-3. Auth pages, onboarding, join link.
-4. `/me`, `/people/[userId]`, `/shopping`, `/family`, dashboard.
-5. PWA layer (manifest, icons, service worker, install help).
-6. Playwright suite, README with Vercel + Supabase deploy steps.
+3. ✅ Auth pages, onboarding, join link.
+4. ✅ `/me`, `/people/[userId]`, `/shopping`, `/family` (incl. account settings), dashboard.
+5. ✅ PWA layer (manifest, icons, service worker, install help).
+6. ✅ Playwright suite (38 tests), README with Vercel + Supabase deploy steps, CI workflow. ⏳ e2e not yet run (see STATUS.md).
 
 ## 9. Dependencies to approve
 
@@ -103,4 +104,6 @@ The PWA layer adds **no** dependencies (Next.js built-in manifest + a hand-writt
 
 1. Invite code: **owner only**.
 2. Account deletion: **in v1** (`delete_account()`, plus a button in settings).
-3. README will cover: optional custom SMTP (e.g. Resend) for reliable password-reset email, a GitHub Action that pings Supabase every few days so the free project never pauses, and a one-line manual backup (`supabase db dump`).
+3. README covers: optional custom SMTP (Resend) for reliable password-reset email, a keep-alive so the free project never pauses, and manual backups (`supabase db dump`).
+4. Keep-alive is a **daily Vercel Cron** (`vercel.json` → `/api/keep-alive` → `ping()`), not a GitHub Action: GitHub disables scheduled workflows after 60 days of repo inactivity.
+5. Email links use `token_hash` templates (`supabase/templates/`) verified server-side in `/auth/confirm`, so they work across devices.

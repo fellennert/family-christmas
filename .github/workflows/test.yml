@@ -1,0 +1,59 @@
+# Runs every test suite on each push and pull request, on GitHub's servers.
+# Nothing to configure: it starts its own throwaway local Supabase.
+#
+# NOTE: written in a cloud session where the full Supabase stack couldn't be
+# started, so this workflow has not been run yet. See docs/STATUS.md.
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Start local Supabase (database, auth, API, test inbox)
+        run: npm run db:start
+
+      - name: Write .env.local for the app
+        run: |
+          eval "$(npx supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "NEXT_PUBLIC_SITE_URL=http://localhost:3100"
+          } > .env.local
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Database privacy tests
+        run: npm run test:db
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

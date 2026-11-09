@@ -26,7 +26,7 @@ export default async function ShoppingPage() {
           <section key={group.recipientId ?? 'former'} className="space-y-3" aria-label={`For ${group.recipientName}`}>
             <h2 className="text-2xl">
               For{' '}
-              {group.recipientId ? (
+              {group.recipientActive ? (
                 <Link href={`/people/${group.recipientId}`} className="text-pine underline underline-offset-4">
                   {group.recipientName}
                 </Link>

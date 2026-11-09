@@ -248,6 +248,8 @@ export type ShoppingItem = {
 export type ShoppingGroup = {
   recipientId: string | null;
   recipientName: string;
+  /** False when the recipient left the family or deleted their account. */
+  recipientActive: boolean;
   items: ShoppingItem[];
 };
 
@@ -282,6 +284,7 @@ export async function getShoppingList(): Promise<ShoppingGroup[]> {
       groups.set(key, {
         recipientId: g.recipient_id,
         recipientName: (g.recipient_id && names.get(g.recipient_id)) || 'A former family member',
+        recipientActive: members.some((m) => m.id === g.recipient_id),
         items: [],
       });
     }
