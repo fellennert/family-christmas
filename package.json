@@ -1,0 +1,21 @@
+{
+  "name": "family-christmas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:start": "supabase start -x studio,imgproxy,storage-api,edge-runtime,logflare,vector,realtime,supavisor,postgres-meta",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "test:db": "vitest run tests/db"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "supabase": "^3.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0"
+  }
+}

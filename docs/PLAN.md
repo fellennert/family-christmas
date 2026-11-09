@@ -1,6 +1,6 @@
 # Implementation plan and RLS design (for review)
 
-Status: **proposal**. Per SPEC §13, nothing beyond the database layer gets built until this is approved.
+Status: **approved**. Step 1 (database layer) is built and tested; see §8.
 
 ## 1. Guiding decisions
 
@@ -32,7 +32,7 @@ Status: **proposal**. Per SPEC §13, nothing beyond the database layer gets buil
 
 They are `SECURITY DEFINER` so policies don't recurse into each other's RLS.
 
-## 4. RLS policies (SELECT only; RLS enabled + forced on every table)
+## 4. RLS policies (SELECT only; RLS enabled on every table)
 
 | Table | Policy (`USING`) |
 |---|---|
@@ -54,14 +54,15 @@ Consequences:
 | `create_family(name)` | Generates an 8-char code (alphabet without 0/O/1/I), inserts the family and owner membership. Fails if the user already has a family (v1). |
 | `join_family(code)` | Joins as member. Bad code → generic `invalid_code`. |
 | `get_invite_code()` / `regenerate_invite_code()` | Owner only. |
-| `remove_member(user_id)` | Owner only. Marks membership removed, deletes the member's claims, soft-deletes gifts they created. |
+| `remove_member(user_id)` | Owner only. Marks membership removed, deletes the member's claims, soft-deletes gifts they created **or that were for them** (so claimers of those see "removed"). |
 | `update_display_name(name)` | Self only. Trimmed, 1–50 chars. |
 | `add_gift(recipient_id, title, url, notes)` | Recipient must be an active family member. `created_by = auth.uid()`. |
 | `update_gift(id, …)` | Creator only. If a claim exists, sets `claims.gift_edited_after_claim = true`. Returns the same result either way. |
 | `delete_gift(id)` | Creator only. If claimed by someone other than the caller → soft-delete (`removed_at`, `removed_by`). Otherwise → hard-delete. **Returns void in both cases; same response, same code path length.** |
 | `claim_gift(id)` | Caller must be able to see the gift and must not be its recipient. Gift not removed. `insert … on conflict (gift_id) do nothing`; returns `claimed` or `already_claimed`. If the caller *is* the recipient (or can't see the gift) → `not_found`, never a claim-related error. |
-| `unclaim_gift(id)` | Only the claimer's own claim. |
-| `dismiss_removed(claim_id)` | Claimer only, gift must be soft-deleted. Deletes the claim and hard-deletes the gift. |
+| `unclaim_gift(id)` | Only the claimer's own claim. If the gift was already removed from the list, this is the "dismiss" action: it also hard-deletes the gift. |
+| `update_display_name(name)` | Self only. |
+| `delete_account()` | Deletes the caller's auth user, profile, memberships and claims. Gifts for/by them that someone else claimed are kept soft-deleted (claimer is told); everything else is deleted. Ownership passes to the longest-standing member; a family left empty is deleted. |
 
 `EXECUTE` is revoked from `public`/`anon` and granted to `authenticated` only.
 
@@ -75,14 +76,14 @@ Consequences:
 
 ## 7. Testing
 
-- **DB/RLS tests (Vitest):** run against a local Supabase stack (`supabase start`, Docker). Each test signs in as a real seeded user with the anon key and hits tables and RPCs directly. Covers SPEC §10 items 1, 2, 3 (identical query results before/after a claim), 5, 6 (parallel `claim_gift` calls, exactly one `claimed`), 7, 8.
+- **DB/RLS tests (Vitest, `tests/db/`):** run against the local Supabase database (`npm run db:start`, Docker). Each query runs the way PostgREST runs a request: in a transaction, as role `authenticated`, with the user's id in `request.jwt.claims`. RLS and function checks behave exactly as they do for the app. Uses `psql`, so no extra dependency. The suite was checked by deliberately breaking four rules; each break made tests fail. Covers SPEC §10 items 1, 2, 3 (identical query results before/after a claim), 5, 6 (parallel `claim_gift` calls, exactly one `claimed`), 7, 8.
 - **E2E (Playwright):** same scenarios through the UI, plus item 4 (delete dialog identical, claimer sees "Removed"), and item 9 (service-worker cache isolation across logout/login, including offline mode).
 - **Unit (Vitest):** URL validation/domain hint, invite-code alphabet, input trimming.
 
 ## 8. Build order
 
-1. Migrations: schema → helpers → RLS → RPCs. Seed script.
-2. RLS test suite green. **(checkpoint with you)**
+1. ✅ Migrations: schema → helpers → RLS → RPCs. Seed script.
+2. ✅ RLS test suite green (39 tests). **(checkpoint with you)**
 3. Auth pages, onboarding, join link.
 4. `/me`, `/people/[userId]`, `/shopping`, `/family`, dashboard.
 5. PWA layer (manifest, icons, service worker, install help).
@@ -92,13 +93,14 @@ Consequences:
 
 Listed in the spec: `next`, `react`, `typescript`, `tailwindcss`, `@supabase/supabase-js`, `vitest`, `@playwright/test`.
 
-**New, needing your OK:**
+**Approved additions:**
 - `@supabase/ssr`: Supabase's official helper for auth cookies in Next.js App Router. Practically required.
 - `supabase` CLI (dev dependency): runs the local stack and applies migrations for tests and deploy.
 
 The PWA layer adds **no** dependencies (Next.js built-in manifest + a hand-written service worker).
 
-## 10. Open questions
+## 10. Decisions
 
-1. Should non-owner members also see/share the invite code? (Plan: owner only, per spec wording.)
-2. Should account deletion be in v1? Not required for a PWA, but needed later if we ever ship to the App Store.
+1. Invite code: **owner only**.
+2. Account deletion: **in v1** (`delete_account()`, plus a button in settings).
+3. README will cover: optional custom SMTP (e.g. Resend) for reliable password-reset email, a GitHub Action that pings Supabase every few days so the free project never pauses, and a one-line manual backup (`supabase db dump`).
