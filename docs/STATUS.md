@@ -1,41 +1,38 @@
 # Status: what's done, what's verified, what still needs a first run
 
-_Last updated: 9 November 2026._
+_Last updated: 14 November 2026._
 
-Everything in SPEC §12 has been written. The work was done in a cloud session that could run the database and the login service, but **not** Supabase's data API (PostgREST): the network policy there blocked downloading it. So everything that goes through the data API has been written and type-checked but has **not yet been run**. The checklist below is for the first run on your computer.
+Everything in SPEC §12 is written, and the whole test suite has now been run on a real computer against the full local Supabase stack.
 
 ## 📌 Open to-dos for you
 
-1. **Switch GitHub's default branch to `master`**: repo **Settings → General → Default branch**. (It is currently `claude/ios-app-feasibility-xlqkyh`, because that was the first branch pushed. Vercel deploys the default branch.) Then delete that branch if you like; it's identical to `master`.
-2. Run the first-run checklist below.
-3. Deploy (README §6).
+1. After pushing the multi-family change, run `npx supabase db push --remote` so the live database gets migration `20261114000005_multi_family.sql`. Until then, adding gifts and the owner actions fail on the live site.
+2. Supabase dashboard: paste the two email templates and set the minimum password length to 8 (README §6 step E).
+3. Try it on a phone: sign up, start a family, test "Forgot your password?".
 
-## ✅ Verified in the cloud session
+## ✅ Verified (14 November 2026, on a Mac)
 
-| Area | How it was verified |
+| Suite | Result |
 |---|---|
-| Database schema, privacy rules (RLS), all write functions | `npm run test:db`: **39 tests pass**. They run exactly as the API runs requests (as the `authenticated` role with the user's id). |
-| The privacy tests really catch mistakes | Each rule was deliberately broken in turn (recipient sees all gifts, claims visible to all, membership check bypassed, unique-claim constraint dropped); each break made 4–11 tests fail. |
-| Demo data (`supabase/seed.sql`) | Loads cleanly; demo users can log in through the real Supabase Auth. |
-| Unit tests | `npm run test:unit`: **48 tests pass**. |
-| TypeScript and production build | `npm run typecheck` and `npm run build` succeed (Next.js 16.4). |
-| Login page, wrong-password message, successful login (session cookie set, redirect) | Real browser against real Supabase Auth. |
-| Password reset by email | Real browser: email arrives in the test inbox with the custom template, the link verifies via `/auth/confirm`, sets the session, redirects to "choose a new password"; reusing the link is rejected. |
-| Signed-out visitors redirected to `/login?next=…` | Real browser. |
-| PWA: manifest, icons, service-worker headers | Real browser + Playwright tests (`manifest…`, `service worker file…`) pass on desktop and phone profiles. |
-| PWA: what gets cached | Real browser: only `/_next/static/*`, `/icons/*` and `/offline`. Logout wipe re-downloads only those. Offline navigation shows the offline page. |
-| Pages render (login, sign-up, reset, join link, offline) | Real browser at iPhone size; screenshots in [`screenshots/`](screenshots). |
+| Unit tests (`npm run test:unit`) | **48 pass** |
+| Database privacy rules and functions (`npm run test:db`) | **40 pass**, including several families per person |
+| Browser tests (`npm run test:e2e`), desktop + phone | **40 pass**: every signed-in page, SPEC §10 items 1–9, the family switcher |
+| TypeScript (`npm run typecheck`) | passes |
+| Production deploy | Vercel at <https://family-christmas-taupe.vercel.app>; cloud database has the first 4 migrations |
 
-## ⏳ Written but not yet run (needs the full local stack: run on your computer)
+Notes from the first run:
 
-These all need the data API, which couldn't be downloaded in the cloud session:
+- 10 browser tests failed at first; all were mistakes in the tests (ambiguous text matches, an ID pattern, comparing HTML before/after the page's scripts loaded). Fixed; no app changes were needed.
+- `npm run test:db` needs `psql` (`brew install libpq`, then add `/opt/homebrew/opt/libpq/bin` to `PATH`).
+- Supabase CLI v3 pushes to the **local** database unless you add `--remote`.
 
-- All signed-in pages: dashboard, My list, someone's list, shopping, settings, onboarding, join flow.
-- 32 of the 38 Playwright tests (`npm run test:e2e`), including SPEC §10 items 1–9 in the browser.
-- The keep-alive route `/api/keep-alive` (the `ping()` function itself is tested in `test:db`).
-- The GitHub Actions workflow `.github/workflows/test.yml`.
+## Several families per person (added 14 November 2026)
 
-Small first-run fixes are likely (a selector in a test, a label text). The logic underneath is covered by the database tests.
+- A person can be in several families. Each family has its own lists, secret ideas and claims; nothing is shared between families.
+- The header's family name becomes a switcher when you're in more than one. The current family is remembered in a cookie, which is only a preference; the database checks membership on every read and write.
+- Invite links work for people already in a family; they keep their old one. **Settings → Join or start another family** does the same.
+- An owner removing someone affects only that family.
+- Database: `supabase/migrations/20261114000005_multi_family.sql`. `add_gift`, `get_invite_code`, `regenerate_invite_code` and `remove_member` now take the family id.
 
 ## First-run checklist (on your computer)
 
@@ -43,7 +40,7 @@ Small first-run fixes are likely (a selector in a test, a label text). The logic
 2. `npm install`
 3. `npm run db:start`, then fill `.env.local` (README §4).
 4. `npm run db:reset` (loads the demo family).
-5. `npm test`: expect 48 unit + 39 database tests to pass.
+5. `npm test`: expect 48 unit + 40 database tests to pass.
 6. `npm run dev` → <http://localhost:3000>, log in as `mom@demo.test` / `christmas`, click around:
    - **My list** shows 3 wishes and **no** claim info.
    - Log in as `dad@demo.test` → Mom's list shows "Claimed by Sam", "Claimed by Grandma", the secret ideas, and "You're getting this" on the spa voucher.

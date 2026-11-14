@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: 'My wish list' };
  * Everything rendered here is the same whether or not a gift is claimed.
  */
 export default async function MyListPage() {
-  const { viewer } = await requireFamily();
+  const { viewer, family } = await requireFamily();
   const gifts = await getMyList();
 
   return (
@@ -47,7 +47,7 @@ export default async function MyListPage() {
         <h2 id="add-title" className="text-2xl">
           Add a wish
         </h2>
-        <GiftForm mode="add" recipientId={viewer.id} />
+        <GiftForm mode="add" familyId={family.id} recipientId={viewer.id} />
       </section>
     </>
   );

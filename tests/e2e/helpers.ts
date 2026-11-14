@@ -36,6 +36,8 @@ export type E2EUser = {
   password: string;
   /** Signed-in supabase-js client acting as this user (through RLS). */
   db: SupabaseClient;
+  /** The family this user's helper-added gifts go into (their first one). */
+  familyId?: string;
 };
 
 /** A confirmed user with a unique email. */
@@ -65,14 +67,15 @@ async function rpc<T>(u: E2EUser, fn: string, args: Record<string, unknown> = {}
 }
 
 export async function makeFamily(owner: E2EUser, ...members: E2EUser[]) {
-  await rpc(owner, 'create_family', { p_name: `E2E ${owner.name}'s family` });
-  const code = await rpc<string>(owner, 'get_invite_code');
+  const familyId = await rpc<string>(owner, 'create_family', { p_name: `E2E ${owner.name}'s family` });
+  const code = await rpc<string>(owner, 'get_invite_code', { p_family_id: familyId });
   for (const m of members) await rpc(m, 'join_family', { p_code: code });
-  return { code };
+  for (const u of [owner, ...members]) u.familyId ??= familyId;
+  return { code, familyId };
 }
 
 export const addGift = (by: E2EUser, recipient: E2EUser, title: string, url?: string, notes?: string) =>
-  rpc<string>(by, 'add_gift', { p_recipient_id: recipient.id, p_title: title, p_url: url ?? null, p_notes: notes ?? null });
+  rpc<string>(by, 'add_gift', { p_family_id: by.familyId ?? null, p_recipient_id: recipient.id, p_title: title, p_url: url ?? null, p_notes: notes ?? null });
 
 export const claimGift = (by: E2EUser, giftId: string) => rpc<string>(by, 'claim_gift', { p_gift_id: giftId });
 

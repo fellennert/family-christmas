@@ -39,7 +39,7 @@ test.describe('recipient privacy', () => {
       await page.waitForLoadState('networkidle');
     }
     await page.goto('/me');
-    await expect(page.getByText('Red scarf')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Red scarf/ })).toBeVisible();
     const everything = (await collected()) + (await page.content());
 
     expect(everything).not.toContain('SECRET spa voucher');
@@ -59,12 +59,19 @@ test.describe('recipient privacy', () => {
     await addGift(mom, mom, 'Gamma');
 
     await login(page, mom, '/me');
-    const before = await page.locator('main').innerHTML();
+    // Compare what the page shows (text + every heading, button, link, label),
+    // not raw HTML: React's hidden form fields differ between renders.
+    const snapshot = async () => {
+      const main = page.locator('main');
+      await expect(main.getByTestId('my-gift')).toHaveCount(3);
+      return { text: await main.innerText(), aria: await main.ariaSnapshot() };
+    };
+    const before = await snapshot();
 
     await claimGift(dad, beta);
     await page.reload();
-    const after = await page.locator('main').innerHTML();
-    expect(after).toBe(before);
+    const after = await snapshot();
+    expect(after).toEqual(before);
   });
 
   test('§10.4: deleting a claimed gift looks exactly like deleting an unclaimed one; the claimer is told', async ({ page, browser }) => {
@@ -85,7 +92,7 @@ test.describe('recipient privacy', () => {
       const html = (await dialog.innerHTML()).replaceAll(title, '<TITLE>');
       await dialog.getByRole('button', { name: 'Yes, remove it' }).click();
       await expect(page.getByTestId('my-gift').filter({ hasText: title })).toHaveCount(0);
-      return { text, html: html.replace(/[0-9a-f-]{36}/g, '<ID>') };
+      return { text, html: html.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<ID>') };
     };
     const one = await dialogText('Gift One'); // claimed
     const two = await dialogText('Gift Two'); // unclaimed

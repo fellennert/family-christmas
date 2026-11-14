@@ -16,7 +16,6 @@ const MESSAGES: Record<string, string> = {
   invalid_url: 'Links must start with http:// or https://.',
   invalid_notes: 'Please keep notes under 1000 characters.',
   invalid_code: 'That invite code doesn’t match any family. Check it and try again.',
-  already_in_family: 'You’re already in a family.',
   not_in_family: 'You need to join a family first.',
   cannot_remove_self: 'You can’t remove yourself as the owner.',
 };

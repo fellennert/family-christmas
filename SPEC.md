@@ -19,7 +19,7 @@ Rationale: Supabase gives email/password auth, password reset emails, and Postgr
 ## 3. Core concepts
 
 - **User:** has an account (email, password, display name).
-- **Family:** a group of users who can see each other's lists. Joined via an invite code. In v1 each user belongs to exactly one family, but the schema should allow many-to-many so multiple groups can be added later.
+- **Family:** a group of users who can see each other's lists. Joined via an invite code. A user can belong to several families (e.g. their own and their in-laws'). Each family has its own lists, secret ideas and claims; the site shows one family at a time, with a switcher in the header. (Originally v1 allowed one family per user; changed 14 November 2026.) The schema is many-to-many so multiple groups can be added later.
 - **Gift:** an item for one recipient. Fields: title (required), URL (optional), notes (optional, e.g. size or color). A gift is either:
   - **Self-added:** created by the recipient on their own list. Visible to the recipient and to everyone else.
   - **Secret idea:** created by someone else for the recipient. **Never visible to the recipient in any form.**
@@ -163,7 +163,6 @@ Write automated tests that prove the privacy rules, at both the database (RLS) l
 
 ## 11. Out of scope for v1 (possible later)
 
-- Multiple families per user
 - Gift quantities / split claims / group gifts
 - "Purchased" status separate from "claimed"
 - Priority ranking

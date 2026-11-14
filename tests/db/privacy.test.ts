@@ -152,7 +152,7 @@ describe('§10.7 other families see nothing', () => {
 
   it('outsider cannot act on gifts or people in another family', async () => {
     expect(await errorCode(claim(outsider, momBook))).toBe('not_found');
-    expect(await errorCode(rpc(outsider.id, 'add_gift', `'${mom.id}'`, "'x'"))).toBe('not_found');
+    expect(await errorCode(rpc(outsider.id, 'add_gift', `'${fam.id}'`, `'${mom.id}'`, "'x'"))).toBe('not_found');
     expect(await errorCode(rpc(outsider.id, 'update_gift', `'${momBook}'`, "'x'"))).toBe('not_found');
     expect(await errorCode(rpc(outsider.id, 'delete_gift', `'${momBook}'`))).toBe('not_found');
     expect(await errorCode(rpc(outsider.id, 'unclaim_gift', `'${momScarf}'`))).toBe('not_found');
@@ -189,12 +189,12 @@ describe('locked-down access paths', () => {
 
   it('invite code is owner-only', async () => {
     expect(await errorCode(asUser(dad.id, 'select invite_code from public.families'))).toBe('permission');
-    expect(await errorCode(rpc(dad.id, 'get_invite_code'))).toBe('forbidden');
-    expect(await rpc(mom.id, 'get_invite_code')).toBe(fam.code);
+    expect(await errorCode(rpc(dad.id, 'get_invite_code', `'${fam.id}'`))).toBe('forbidden');
+    expect(await rpc(mom.id, 'get_invite_code', `'${fam.id}'`)).toBe(fam.code);
   });
 
   it('internal helpers are not callable', async () => {
     expect(await errorCode(asUser(dad.id, 'select private.gen_invite_code() as c'))).toBe('permission');
-    expect(await errorCode(asUser(dad.id, 'select private.my_family() as c'))).toBe('permission');
+    expect(await errorCode(asUser(dad.id, `select private.require_owner('${fam.id}') as c`))).toBe('permission');
   });
 });

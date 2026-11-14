@@ -10,6 +10,7 @@
  *    RLS would hide claims anyway, but the page code has no claim data at all.
  */
 import { cache } from 'react';
+import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
@@ -26,9 +27,20 @@ export type Viewer = {
   displayName: string;
 };
 
+export type FamilySummary = { id: string; name: string };
+
+/**
+ * Cookie remembering which family the person is looking at. Only a
+ * preference: every read is filtered by RLS and every write re-checks
+ * membership in the database, so a forged value shows nothing extra.
+ */
+export const CURRENT_FAMILY_COOKIE = 'fc_family';
+
 export type FamilyContext = {
   viewer: Viewer;
   family: { id: string; name: string; ownerId: string | null };
+  /** Every family the viewer is an active member of, oldest first. */
+  families: FamilySummary[];
   isOwner: boolean;
   /** Active members including the viewer, oldest first. */
   members: Member[];
@@ -55,19 +67,34 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   };
 });
 
-/** The viewer's family id, or null if they have none yet. */
-export const getMyFamilyId = cache(async (): Promise<string | null> => {
+/** Every family the viewer is an active member of, oldest membership first. */
+export const getMyFamilies = cache(async (): Promise<FamilySummary[]> => {
   const viewer = await getViewer();
-  if (!viewer) return null;
+  if (!viewer) return [];
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('family_members')
-    .select('family_id')
+    .select('family_id, joined_at, families(name)')
     .eq('user_id', viewer.id)
     .is('removed_at', null)
-    .limit(1)
-    .maybeSingle();
-  return data?.family_id ?? null;
+    .order('joined_at')
+    .order('family_id');
+  if (error) throw error;
+  return (data ?? []).map((r) => {
+    const f = (Array.isArray(r.families) ? r.families[0] : r.families) as { name?: string } | null;
+    return { id: r.family_id as string, name: f?.name ?? 'Family' };
+  });
+});
+
+/**
+ * The family the viewer is looking at: the remembered one if they are still
+ * in it, otherwise their oldest. Null if they have no family yet.
+ */
+export const getMyFamilyId = cache(async (): Promise<string | null> => {
+  const families = await getMyFamilies();
+  if (families.length === 0) return null;
+  const remembered = (await cookies()).get(CURRENT_FAMILY_COOKIE)?.value;
+  return families.find((f) => f.id === remembered)?.id ?? families[0].id;
 });
 
 /**
@@ -79,6 +106,7 @@ export const requireFamily = cache(async (): Promise<FamilyContext> => {
   if (!viewer) redirect('/login');
   const familyId = await getMyFamilyId();
   if (!familyId) redirect('/onboarding');
+  const families = await getMyFamilies();
 
   const supabase = await createClient();
   const [{ data: family, error: famErr }, { data: rows, error: memErr }] = await Promise.all([
@@ -105,6 +133,7 @@ export const requireFamily = cache(async (): Promise<FamilyContext> => {
   return {
     viewer,
     family: { id: family.id, name: family.name, ownerId: family.owner_id },
+    families,
     isOwner: members.some((m) => m.id === viewer.id && m.role === 'owner'),
     members,
   };
@@ -136,11 +165,12 @@ export type MyGift = {
 };
 
 export async function getMyList(): Promise<MyGift[]> {
-  const { viewer } = await requireFamily();
+  const { viewer, family } = await requireFamily();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('gifts')
     .select('id, title, url, notes')
+    .eq('family_id', family.id)
     .eq('recipient_id', viewer.id)
     .eq('created_by', viewer.id)
     .is('removed_at', null)
@@ -184,6 +214,8 @@ export async function getPersonList(personId: string) {
     supabase
       .from('gifts')
       .select('id, title, url, notes, created_by, removed_at, removed_by')
+      // Only this family's list: the person may be in other families with the viewer.
+      .eq('family_id', ctx.family.id)
       .eq('recipient_id', personId)
       .order('created_at')
       .order('id'),
@@ -254,15 +286,16 @@ export type ShoppingGroup = {
 };
 
 export async function getShoppingList(): Promise<ShoppingGroup[]> {
-  const { viewer, members } = await requireFamily();
+  const { viewer, family, members } = await requireFamily();
   const supabase = await createClient();
   const [{ data, error }, names] = await Promise.all([
     supabase
       .from('claims')
       .select(
-        'gift_id, created_at, gift_edited_after_claim, gifts(title, url, notes, recipient_id, removed_at, removed_by)',
+        'gift_id, created_at, gift_edited_after_claim, gifts!inner(family_id, title, url, notes, recipient_id, removed_at, removed_by)',
       )
       .eq('claimer_id', viewer.id)
+      .eq('gifts.family_id', family.id)
       .order('created_at'),
     getNames(),
   ]);
@@ -308,10 +341,10 @@ export async function getShoppingList(): Promise<ShoppingGroup[]> {
 
 /** Owner-only: the invite code (null for members). */
 export async function getInviteCode(): Promise<string | null> {
-  const { isOwner } = await requireFamily();
+  const { isOwner, family } = await requireFamily();
   if (!isOwner) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc('get_invite_code');
+  const { data, error } = await supabase.rpc('get_invite_code', { p_family_id: family.id });
   if (error) return null;
   return data as string;
 }

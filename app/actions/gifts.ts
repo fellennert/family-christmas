@@ -18,12 +18,14 @@ function refresh() {
 
 export async function addGift(_: ActionState, form: FormData): Promise<ActionState> {
   const recipientId = form.get('recipientId');
-  if (!isUuid(recipientId)) return fail(friendlyError('not_found'));
+  const familyId = form.get('familyId');
+  if (!isUuid(recipientId) || !isUuid(familyId)) return fail(friendlyError('not_found'));
   const v = validateGift({ title: form.get('title'), url: form.get('url'), notes: form.get('notes') });
   if (!v.ok) return fail(v.error);
 
   const supabase = await createClient();
   const { error } = await supabase.rpc('add_gift', {
+    p_family_id: familyId,
     p_recipient_id: recipientId,
     p_title: v.value.title,
     p_url: v.value.url,

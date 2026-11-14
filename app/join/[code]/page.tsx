@@ -39,20 +39,17 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
     );
   }
 
-  if (await getMyFamilyId()) {
-    return (
-      <AuthCard title="You’re already in a family">
-        <Notice>You can only be in one family for now.</Notice>
-        <Link href="/" className="btn-primary">
-          Go to my family
-        </Link>
-      </AuthCard>
-    );
-  }
+  const hasFamily = (await getMyFamilyId()) !== null;
 
   return (
-    <AuthCard title="Join your family">
+    <AuthCard title={hasFamily ? 'Join another family' : 'Join your family'}>
       <p className="text-lg">Hi {viewer.displayName}! Tap the button to join.</p>
+      {hasFamily && (
+        <Notice>
+          You’ll keep your current family too. Each family has its own lists; switch between them at the top of the
+          page.
+        </Notice>
+      )}
       <ActionForm action={joinFamily} submitLabel="Join family" pendingLabel="Joining…" buttonClassName="btn-primary w-full">
         <div>
           <label htmlFor="code" className="label">

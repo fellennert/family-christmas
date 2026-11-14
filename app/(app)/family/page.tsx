@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { deleteAccount, updateDisplayName } from '@/app/actions/account';
 import { regenerateInviteCode, removeMember } from '@/app/actions/family';
 import { ActionForm } from '@/components/ActionForm';
@@ -21,7 +22,7 @@ async function baseUrl() {
 /** SPEC §4.2 family settings, plus the person's own account settings. */
 export default async function FamilyPage({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
   const sp = await searchParams;
-  const { viewer, family, isOwner, members } = await requireFamily();
+  const { viewer, family, families, isOwner, members } = await requireFamily();
   const code = await getInviteCode();
   const link = code ? `${await baseUrl()}/join/${code}` : null;
 
@@ -63,7 +64,9 @@ export default async function FamilyPage({ searchParams }: { searchParams: Promi
                 submitLabel="Make a new code"
                 pendingLabel="Making…"
                 buttonClassName="btn-danger"
-              />
+              >
+                <input type="hidden" name="familyId" value={family.id} />
+              </ActionForm>
             </div>
           </details>
         </section>
@@ -95,6 +98,7 @@ export default async function FamilyPage({ searchParams }: { searchParams: Promi
                       pendingLabel="Removing…"
                       buttonClassName="btn-danger"
                     >
+                      <input type="hidden" name="familyId" value={family.id} />
                       <input type="hidden" name="userId" value={m.id} />
                     </ActionForm>
                   </div>
@@ -104,6 +108,24 @@ export default async function FamilyPage({ searchParams }: { searchParams: Promi
           ))}
         </ul>
         {!isOwner && <p className="text-base text-muted">Ask the family owner for the invite link.</p>}
+      </section>
+
+      {/* ---------------------------------------------------------- Families */}
+      <section className="card space-y-4" aria-labelledby="families-title">
+        <h2 id="families-title" className="text-2xl">
+          Your families
+        </h2>
+        {families.length > 1 ? (
+          <p className="text-lg">
+            You’re in {families.length} families: {families.map((f) => f.name).join(', ')}. Each has its own lists.
+            Switch between them by tapping the family name at the top of the page.
+          </p>
+        ) : (
+          <p className="text-lg">Part of another family too, like your in-laws? You can join their group as well.</p>
+        )}
+        <Link href="/onboarding?add=1" className="btn-secondary w-fit">
+          Join or start another family
+        </Link>
       </section>
 
       {/* ---------------------------------------------------------- Account */}
@@ -147,8 +169,8 @@ export default async function FamilyPage({ searchParams }: { searchParams: Promi
             <p className="text-lg">
               This permanently deletes your account, your wish list, your secret ideas and your claims. It can’t be
               undone.
-              {isOwner && members.length > 1 && ' The family will be handed over to the longest-standing member.'}
-              {isOwner && members.length === 1 && ' Because you are the only member, the family is deleted too.'}
+              {' '}Any family you own is handed over to its longest-standing member, or deleted if you are its only
+              member.
             </p>
             <ActionForm
               action={deleteAccount}

@@ -47,7 +47,7 @@ test('sign up, create a family, invite someone with the link', async ({ page, br
 
   // The owner now sees the new member.
   await page.reload();
-  await expect(page.getByText('Cousin Joe')).toBeVisible();
+  await expect(page.getByText('Cousin Joe', { exact: true })).toBeVisible();
 });
 
 test('regenerating the invite code invalidates the old one', async ({ page }) => {

@@ -220,7 +220,7 @@ describe('§7 input handling', () => {
 describe('§4.2 families and invite codes', () => {
   it('codes use the unambiguous alphabet and regenerate', async () => {
     expect(fam.code).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
-    const fresh = await rpc<string>(mom.id, 'regenerate_invite_code');
+    const fresh = await rpc<string>(mom.id, 'regenerate_invite_code', `'${fam.id}'`);
     expect(fresh).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
     expect(fresh).not.toBe(fam.code);
     const newbie = await createUser('Newbie');
@@ -229,16 +229,45 @@ describe('§4.2 families and invite codes', () => {
     expect(await rpc(newbie.id, 'join_family', lit(fresh))).toBe(fam.id); // idempotent
   });
 
-  it('v1: one family per user', async () => {
-    expect(await errorCode(rpc(dad.id, 'create_family', lit('Second')))).toBe('already_in_family');
-    const other = await createFamily('Other', await createUser('Other owner'));
-    expect(await errorCode(rpc(dad.id, 'join_family', lit(other.code)))).toBe('already_in_family');
+  it('a person can be in several families; each keeps its own lists', async () => {
+    const second = await rpc<string>(dad.id, 'create_family', lit('Second'));
+    const otherOwner = await createUser('Other owner');
+    const other = await createFamily('Other', otherOwner);
+    expect(await rpc(dad.id, 'join_family', lit(other.code))).toBe(other.id);
+    expect(await rpc(dad.id, 'join_family', lit(other.code))).toBe(other.id); // idempotent
+
+    // Dad owns "Second" but is a plain member of "Other" and of Mom's family.
+    expect(await rpc(dad.id, 'get_invite_code', `'${second}'`)).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
+    expect(await errorCode(rpc(dad.id, 'get_invite_code', `'${other.id}'`))).toBe('forbidden');
+
+    // A gift for Dad in "Other" stays in "Other": Mom's family never sees it.
+    const inOther = await rpc<string>(otherOwner.id, 'add_gift', `'${other.id}'`, `'${dad.id}'`, lit('Other-family gift'));
+    await claim(otherOwner, inOther);
+    expect((await everythingVisibleTo(mom)).gifts.map((g) => g.id)).not.toContain(inOther);
+    // ...and Dad, its recipient, still can't see the claim.
+    expect((await everythingVisibleTo(dad)).claims).toEqual([]);
+
+    // Mom can't put a gift into a family she isn't in, even for a shared person.
+    expect(await errorCode(rpc(mom.id, 'add_gift', `'${other.id}'`, `'${dad.id}'`, lit('x')))).toBe('not_found');
+    // Nor can Other's owner add a gift for Mom (not in their family).
+    expect(await errorCode(rpc(otherOwner.id, 'add_gift', `'${other.id}'`, `'${mom.id}'`, lit('x')))).toBe('not_found');
+  });
+
+  it('removing someone from one family leaves their other families alone', async () => {
+    const otherOwner = await createUser('Other owner');
+    const other = await createFamily('Other', otherOwner, kid);
+    const kidsOwnInOther = await rpc<string>(kid.id, 'add_gift', `'${other.id}'`, `'${kid.id}'`, lit('Kid wish (other)'));
+    await rpc(mom.id, 'remove_member', `'${fam.id}'`, `'${kid.id}'`);
+    expect((await gift(kidsOwnInOther)).removed_at).toBeNull();
+    expect([...new Set((await everythingVisibleTo(kid)).family_members.map((m) => m.family_id))]).toEqual([other.id]);
+    // Mom can't remove people from a family she doesn't own.
+    expect(await errorCode(rpc(mom.id, 'remove_member', `'${other.id}'`, `'${kid.id}'`))).toBe('forbidden');
   });
 
   it('only the owner manages members and codes', async () => {
-    expect(await errorCode(rpc(dad.id, 'regenerate_invite_code'))).toBe('forbidden');
-    expect(await errorCode(rpc(dad.id, 'remove_member', `'${kid.id}'`))).toBe('forbidden');
-    expect(await errorCode(rpc(mom.id, 'remove_member', `'${mom.id}'`))).toBe('cannot_remove_self');
+    expect(await errorCode(rpc(dad.id, 'regenerate_invite_code', `'${fam.id}'`))).toBe('forbidden');
+    expect(await errorCode(rpc(dad.id, 'remove_member', `'${fam.id}'`, `'${kid.id}'`))).toBe('forbidden');
+    expect(await errorCode(rpc(mom.id, 'remove_member', `'${fam.id}'`, `'${mom.id}'`))).toBe('cannot_remove_self');
   });
 
   it('removing a member deletes their claims and hides their gifts', async () => {
@@ -248,7 +277,7 @@ describe('§4.2 families and invite codes', () => {
     await claim(kid, forMom);
     await claim(gran, kidsOwn);
 
-    await rpc(mom.id, 'remove_member', `'${kid.id}'`);
+    await rpc(mom.id, 'remove_member', `'${fam.id}'`, `'${kid.id}'`);
 
     // Kid's claim is gone, so Mom's gift is claimable again.
     expect(await claim(dad, forMom)).toBe('claimed');
@@ -261,7 +290,7 @@ describe('§4.2 families and invite codes', () => {
     expect(v.gifts).toEqual([]);
     expect(v.family_members).toEqual([]);
     expect(v.profiles.map((p) => p.id)).toEqual([kid.id]);
-    expect(await errorCode(addGift(kid, mom, 'x'))).toBe('not_in_family');
+    expect(await errorCode(addGift(kid, mom, 'x'))).toBe('not_found');
   });
 });
 
@@ -290,7 +319,7 @@ describe('account deletion', () => {
 
   it('owner deleting their account hands the family to the longest-standing member', async () => {
     await rpc(mom.id, 'delete_account');
-    expect(await rpc(dad.id, 'get_invite_code')).toBe(fam.code);
+    expect(await rpc(dad.id, 'get_invite_code', `'${fam.id}'`)).toBe(fam.code);
     const [f] = await asUser<{ owner_id: string }>(dad.id, 'select owner_id from public.families');
     expect(f.owner_id).toBe(dad.id);
   });

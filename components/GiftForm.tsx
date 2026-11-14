@@ -6,7 +6,7 @@ import { LIMITS } from '@/lib/gifts';
 import { ActionForm } from './ActionForm';
 
 type Props =
-  | { mode: 'add'; recipientId: string; submitLabel?: string; titlePlaceholder?: string }
+  | { mode: 'add'; familyId: string; recipientId: string; submitLabel?: string; titlePlaceholder?: string }
   | {
       mode: 'edit';
       giftId: string;
@@ -29,7 +29,10 @@ export function GiftForm(props: Props) {
       testId={props.mode === 'add' ? 'add-gift-form' : 'edit-gift-form'}
     >
       {props.mode === 'add' ? (
-        <input type="hidden" name="recipientId" value={props.recipientId} />
+        <>
+          <input type="hidden" name="familyId" value={props.familyId} />
+          <input type="hidden" name="recipientId" value={props.recipientId} />
+        </>
       ) : (
         <input type="hidden" name="giftId" value={props.giftId} />
       )}

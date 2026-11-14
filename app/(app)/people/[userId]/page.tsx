@@ -64,6 +64,7 @@ export default async function PersonPage({ params }: { params: Promise<{ userId:
         </h2>
         <GiftForm
           mode="add"
+          familyId={ctx.family.id}
           recipientId={person.id}
           submitLabel="Add secret idea"
           titlePlaceholder="e.g. Something they mentioned"

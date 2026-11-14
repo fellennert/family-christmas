@@ -52,7 +52,8 @@ test('§10.9: only static files are cached; a second person on the same device n
     await page.goto(path);
     await page.waitForLoadState('networkidle');
   }
-  await expect(page.getByText('MOM-SECRET bike for Kid')).toBeVisible();
+  await page.goto(`/people/${kid.id}`);
+  await expect(page.getByText('MOM-SECRET bike for Kid', { exact: true })).toBeVisible();
   expectOnlySafeCacheEntries(await cacheEntries(page));
   expect(await cacheEntries(page)).toContain('/offline');
 

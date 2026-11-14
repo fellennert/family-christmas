@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createFamily, joinFamily } from '@/app/actions/family';
 import { ActionForm } from '@/components/ActionForm';
@@ -9,15 +10,24 @@ import { LIMITS } from '@/lib/gifts';
 
 export const metadata: Metadata = { title: 'Welcome' };
 
-/** SPEC §4.2.1: a signed-in user with no family creates or joins one. */
-export default async function OnboardingPage() {
+/**
+ * SPEC §4.2.1: a signed-in user with no family creates or joins one.
+ * With ?add=1, someone already in a family joins or starts another one.
+ */
+export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ add?: string }> }) {
   const viewer = await getViewer();
   if (!viewer) redirect('/login?next=/onboarding');
-  if (await getMyFamilyId()) redirect('/');
+  const adding = (await searchParams).add === '1';
+  const hasFamily = (await getMyFamilyId()) !== null;
+  if (hasFamily && !adding) redirect('/');
 
   return (
-    <AuthCard title={`Welcome, ${viewer.displayName}!`}>
-      <p className="text-lg">To get started, join your family’s group or start a new one.</p>
+    <AuthCard title={hasFamily ? 'Another family' : `Welcome, ${viewer.displayName}!`}>
+      <p className="text-lg">
+        {hasFamily
+          ? 'Join another family’s group, or start a new one. Each family has its own lists; you can switch between them at the top of the page.'
+          : 'To get started, join your family’s group or start a new one.'}
+      </p>
 
       <section className="space-y-3 rounded-xl bg-cream p-4" aria-labelledby="join-title">
         <h2 id="join-title" className="text-2xl">
@@ -65,7 +75,13 @@ export default async function OnboardingPage() {
         </ActionForm>
       </section>
 
-      <SignOutButton className="btn-link" />
+      {hasFamily ? (
+        <Link href="/" className="btn-link">
+          Back to my family
+        </Link>
+      ) : (
+        <SignOutButton className="btn-link" />
+      )}
     </AuthCard>
   );
 }

@@ -39,7 +39,9 @@ It works on phones and computers and can be **installed on the home screen** lik
 | **Settings** (`/family`) | Invite link and code (owner only), member list, remove members (owner only), change your name, log out, delete your account. |
 | Sign-up, log in, forgot password, join link (`/join/CODE`) | The usual. A join link takes new relatives through sign-up and straight into the family. |
 
-Out of scope for now: several families per person, group gifts, "purchased" status, priorities, pictures, email notifications, Secret Santa (see SPEC §11).
+**Several families:** someone can be in more than one family (say their own and their in-laws'). Each family has its own lists; tap the family name at the top to switch. Join another family with its invite link, or via **Settings → Join or start another family**.
+
+Out of scope for now: group gifts, "purchased" status, priorities, pictures, email notifications, Secret Santa (see SPEC §11).
 
 ---
 
@@ -222,10 +224,10 @@ On your computer, in the project folder:
 ```bash
 npx supabase login                               # opens a browser to approve
 npx supabase link --project-ref <your-project-ref>   # asks for the database password from step A
-npx supabase db push                             # creates tables, privacy rules and functions
+npx supabase db push --remote                    # creates tables, privacy rules and functions (--remote: CLI v3 targets the local copy otherwise)
 ```
 
-`db push` shows the 4 migration files and asks to confirm: answer `Y`. It does **not** load the demo family (that's only for your computer).
+`db push --remote` shows the 4 migration files and asks to confirm: answer `Y`. It does **not** load the demo family (that's only for your computer).
 
 Check: in the Supabase dashboard, **Table Editor** should list `profiles`, `families`, `family_members`, `gifts`, `claims`.
 

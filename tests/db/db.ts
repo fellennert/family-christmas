@@ -139,7 +139,7 @@ export async function createFamily(
   ...members: TestUser[]
 ): Promise<TestFamily> {
   const id = await rpc<string>(owner.id, 'create_family', lit(name));
-  const code = await rpc<string>(owner.id, 'get_invite_code');
+  const code = await rpc<string>(owner.id, 'get_invite_code', `'${id}'`);
   for (const m of members) await rpc(m.id, 'join_family', lit(code));
   return { id, code, owner, members };
 }
@@ -151,7 +151,21 @@ export const addGift = (
   url: string | null = null,
   notes: string | null = null,
 ) =>
-  rpc<string>(by.id, 'add_gift', `'${recipient.id}'`, lit(title), lit(url), lit(notes));
+  rpc<string>(by.id, 'add_gift', familyOf(by, recipient), `'${recipient.id}'`, lit(title), lit(url), lit(notes));
+
+/**
+ * SQL for "the family `by` would add this gift in": one they share with
+ * `recipient` if any, else `by`'s oldest family (or null). Evaluated as `by`,
+ * so RLS applies.
+ */
+export const familyOf = (by: TestUser, recipient: TestUser) =>
+  `(select m.family_id from public.family_members m
+     where m.user_id = '${by.id}' and m.removed_at is null
+     order by exists (select 1 from public.family_members r
+                      where r.family_id = m.family_id and r.user_id = '${recipient.id}'
+                        and r.removed_at is null) desc,
+              m.joined_at
+     limit 1)`;
 
 export const claim = (by: TestUser, giftId: string) =>
   rpc<string>(by.id, 'claim_gift', `'${giftId}'`);
