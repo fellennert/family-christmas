@@ -90,7 +90,12 @@ test('forgot password: email link lets you set a new password', async ({ page })
   const url = new URL(href);
   expect(url.pathname).toBe('/auth/confirm');
 
+  // Opening the link (as an email scanner would) does not use it up...
+  await page.request.get(url.pathname + url.search);
   await page.goto(url.pathname + url.search);
+  await page.goto(url.pathname + url.search);
+  // ...only tapping the button does.
+  await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page).toHaveURL(/\/reset-password\/update/);
   await page.getByLabel('New password').fill('brand-new-pass');
   await page.getByLabel('Type it again').fill('brand-new-pass');
@@ -104,6 +109,7 @@ test('forgot password: email link lets you set a new password', async ({ page })
   // The link is single-use.
   await logout(page);
   await page.goto(url.pathname + url.search);
+  await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByText('expired or was already used')).toBeVisible();
 });
 

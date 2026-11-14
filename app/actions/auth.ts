@@ -1,5 +1,6 @@
 'use server';
 
+import type { EmailOtpType } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { clean, LIMITS } from '@/lib/gifts';
@@ -88,4 +89,22 @@ export async function updatePassword(_: ActionState, form: FormData): Promise<Ac
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return fail(friendlyAuthError(error));
   redirect('/?passwordChanged=1');
+}
+
+const EMAIL_LINK_TYPES: EmailOtpType[] = ['signup', 'email', 'recovery', 'invite', 'magiclink', 'email_change'];
+
+/**
+ * The button on /auth/confirm. Only this uses up the one-time email link
+ * (see app/auth/confirm/page.tsx for why opening the page doesn't).
+ */
+export async function confirmEmailLink(_: ActionState, form: FormData): Promise<ActionState> {
+  const tokenHash = form.get('token_hash');
+  const type = form.get('type') as EmailOtpType | null;
+  if (typeof tokenHash !== 'string' || !tokenHash || !type || !EMAIL_LINK_TYPES.includes(type))
+    redirect('/login?error=link');
+  const next = safeNext(clean(form.get('next')), type === 'recovery' ? '/reset-password/update' : '/');
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+  redirect(error ? '/login?error=link' : next);
 }
