@@ -42,6 +42,16 @@ test('someone in two families switches between them; lists never mix', async ({ 
   await page.goto('/shopping');
   await expect(page.getByText('Mom HOME wish')).toHaveCount(0);
 
+  // The menu closes on a tap elsewhere and on Escape.
+  await switcher.locator('summary').click();
+  await expect(switcher).toHaveAttribute('open', '');
+  const vp = page.viewportSize()!;
+  await page.mouse.click(vp.width / 2, vp.height - 20); // well below the menu
+  await expect(switcher).not.toHaveAttribute('open', '');
+  await switcher.locator('summary').click();
+  await page.keyboard.press('Escape');
+  await expect(switcher).not.toHaveAttribute('open', '');
+
   // Switch to the home family.
   await switcher.locator('summary').click();
   await switcher.getByRole('button', { name: "E2E Mom's family" }).click();

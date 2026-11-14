@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import { switchFamily } from '@/app/actions/family';
 import type { FamilySummary } from '@/lib/data';
 
@@ -8,6 +11,30 @@ import type { FamilySummary } from '@/lib/data';
  * <form>s, so it works before JavaScript loads and with big tap targets.
  */
 export function FamilySwitcher({ current, families }: { current: FamilySummary; families: FamilySummary[] }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+
+  // Close the menu on a tap/click anywhere else, or on Escape.
+  useEffect(() => {
+    const close = () => {
+      if (ref.current?.open) ref.current.open = false;
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && ref.current?.open) {
+        close();
+        ref.current.querySelector('summary')?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   if (families.length < 2) {
     return (
       <Link href="/" className="font-display text-2xl leading-tight">
@@ -18,7 +45,7 @@ export function FamilySwitcher({ current, families }: { current: FamilySummary; 
   }
 
   return (
-    <details className="group relative" data-testid="family-switcher">
+    <details ref={ref} className="group relative" data-testid="family-switcher">
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 font-display text-2xl leading-tight [&::-webkit-details-marker]:hidden">
         <span aria-hidden="true">🎄</span>
         <span>{current.name}</span>
