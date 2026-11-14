@@ -15,8 +15,8 @@ Everything in SPEC §12 is written, and the whole test suite has now been run on
 | Suite | Result |
 |---|---|
 | Unit tests (`npm run test:unit`) | **48 pass** |
-| Database privacy rules and functions (`npm run test:db`) | **40 pass**, including several families per person |
-| Browser tests (`npm run test:e2e`), desktop + phone | **40 pass**: every signed-in page, SPEC §10 items 1–9, the family switcher |
+| Database privacy rules and functions (`npm run test:db`) | **46 pass**, including several families per person and shopping notes |
+| Browser tests (`npm run test:e2e`), desktop + phone | **42 pass**: every signed-in page, SPEC §10 items 1–9, the family switcher |
 | TypeScript (`npm run typecheck`) | passes |
 | Production deploy | Vercel at <https://family-christmas-taupe.vercel.app>; cloud database has the first 4 migrations |
 
@@ -25,6 +25,12 @@ Notes from the first run:
 - 10 browser tests failed at first; all were mistakes in the tests (ambiguous text matches, an ID pattern, comparing HTML before/after the page's scripts loaded). Fixed; no app changes were needed.
 - `npm run test:db` needs `psql` (`brew install libpq`, then add `/opt/homebrew/opt/libpq/bin` to `PATH`).
 - Supabase CLI v3 pushes to the **local** database unless you add `--remote`.
+
+## Shopping list: "Got it" and private notes (added 14 November 2026)
+
+- Each item on your shopping list has a **Got it** toggle and a **private note**. Only the claimer can see or change them: not the recipient, not other family members.
+- Stored in their own table, `claim_notes` (readable by the claimer only), not on `claims` (which other members can read). Unclaiming deletes them.
+- Database: `supabase/migrations/20261114000006_claim_notes.sql`; tests in `tests/db/claim-notes.test.ts` and `tests/e2e/shopping.spec.ts`.
 
 ## Several families per person (added 14 November 2026)
 
@@ -40,7 +46,7 @@ Notes from the first run:
 2. `npm install`
 3. `npm run db:start`, then fill `.env.local` (README §4).
 4. `npm run db:reset` (loads the demo family).
-5. `npm test`: expect 48 unit + 40 database tests to pass.
+5. `npm test`: expect 48 unit + 46 database tests to pass.
 6. `npm run dev` → <http://localhost:3000>, log in as `mom@demo.test` / `christmas`, click around:
    - **My list** shows 3 wishes and **no** claim info.
    - Log in as `dad@demo.test` → Mom's list shows "Claimed by Sam", "Claimed by Grandma", the secret ideas, and "You're getting this" on the spa voucher.

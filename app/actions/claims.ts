@@ -36,3 +36,28 @@ export async function claimOrUnclaim(_: ActionState, form: FormData): Promise<Ac
 
   return fail(friendlyError('invalid_input'));
 }
+
+/** Shopping list: the claimer's own "Got it" tick (private to them). */
+export async function setPurchased(_: ActionState, form: FormData): Promise<ActionState> {
+  const giftId = form.get('giftId');
+  if (!isUuid(giftId)) return fail(friendlyError('not_found'));
+  const purchased = form.get('purchased') === 'true';
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('set_purchased', { p_gift_id: giftId, p_purchased: purchased });
+  revalidatePath('/shopping');
+  if (error) return fail(friendlyError(error));
+  return ok(purchased ? 'Marked as got.' : 'Marked as still to get.');
+}
+
+/** Shopping list: the claimer's private note. Empty clears it. */
+export async function saveClaimNote(_: ActionState, form: FormData): Promise<ActionState> {
+  const giftId = form.get('giftId');
+  if (!isUuid(giftId)) return fail(friendlyError('not_found'));
+  const note = typeof form.get('note') === 'string' ? (form.get('note') as string).trim() : '';
+  if (note.length > 500) return fail('Please keep your note under 500 characters.');
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('set_claim_note', { p_gift_id: giftId, p_note: note || null });
+  revalidatePath('/shopping');
+  if (error) return fail(friendlyError(error));
+  return ok(note ? 'Note saved.' : 'Note removed.');
+}

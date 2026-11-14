@@ -275,6 +275,10 @@ export type ShoppingItem = {
   editedAfterClaim: boolean;
   removed: boolean;
   removedByName: string | null;
+  /** The claimer's own "Got it" tick. Only ever shown to the claimer. */
+  purchased: boolean;
+  /** The claimer's private note. Only ever shown to the claimer. */
+  privateNote: string | null;
 };
 
 export type ShoppingGroup = {
@@ -288,7 +292,7 @@ export type ShoppingGroup = {
 export async function getShoppingList(): Promise<ShoppingGroup[]> {
   const { viewer, family, members } = await requireFamily();
   const supabase = await createClient();
-  const [{ data, error }, names] = await Promise.all([
+  const [{ data, error }, names, { data: notes, error: nErr }] = await Promise.all([
     supabase
       .from('claims')
       .select(
@@ -298,8 +302,12 @@ export async function getShoppingList(): Promise<ShoppingGroup[]> {
       .eq('gifts.family_id', family.id)
       .order('created_at'),
     getNames(),
+    // RLS returns only the viewer's own rows (claimer-only table).
+    supabase.from('claim_notes').select('gift_id, purchased, note').eq('claimer_id', viewer.id),
   ]);
   if (error) throw error;
+  if (nErr) throw nErr;
+  const noteByGift = new Map((notes ?? []).map((n) => [n.gift_id as string, n]));
 
   const groups = new Map<string, ShoppingGroup>();
   for (const row of data ?? []) {
@@ -329,6 +337,8 @@ export async function getShoppingList(): Promise<ShoppingGroup[]> {
       editedAfterClaim: row.gift_edited_after_claim,
       removed: g.removed_at !== null,
       removedByName: g.removed_at ? (g.removed_by && names.get(g.removed_by)) || 'a former member' : null,
+      purchased: noteByGift.get(row.gift_id)?.purchased ?? false,
+      privateNote: noteByGift.get(row.gift_id)?.note ?? null,
     });
   }
 

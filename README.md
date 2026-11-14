@@ -35,13 +35,13 @@ It works on phones and computers and can be **installed on the home screen** lik
 | **Family** (`/`) | See everyone in your family; tap a name to open their list. |
 | **My list** (`/me`) | Add, edit and delete your own wishes. You never see claims or secret ideas here. |
 | **Someone's list** (`/people/…`) | See their wishes and everyone's **secret ideas** for them, with "Claimed by Aunt Sue" or "Unclaimed". Claim, unclaim, add your own secret idea. |
-| **Shopping** (`/shopping`) | Everything you've claimed, grouped by person, with warnings if a gift was **removed** or **edited** after you claimed it. |
+| **Shopping** (`/shopping`) | Everything you've claimed, grouped by person, with warnings if a gift was **removed** or **edited** after you claimed it. Tick **Got it** and add a **private note** to each (only you see these). |
 | **Settings** (`/family`) | Invite link and code (owner only), member list, remove members (owner only), change your name, log out, delete your account. |
 | Sign-up, log in, forgot password, join link (`/join/CODE`) | The usual. A join link takes new relatives through sign-up and straight into the family. |
 
 **Several families:** someone can be in more than one family (say their own and their in-laws'). Each family has its own lists; tap the family name at the top to switch. Join another family with its invite link, or via **Settings → Join or start another family**.
 
-Out of scope for now: group gifts, "purchased" status, priorities, pictures, email notifications, Secret Santa (see SPEC §11).
+Out of scope for now: group gifts, priorities, pictures, email notifications, Secret Santa (see SPEC §11).
 
 ---
 

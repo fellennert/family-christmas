@@ -164,7 +164,6 @@ Write automated tests that prove the privacy rules, at both the database (RLS) l
 ## 11. Out of scope for v1 (possible later)
 
 - Gift quantities / split claims / group gifts
-- "Purchased" status separate from "claimed"
 - Priority ranking
 - Images and link previews
 - Email notifications

@@ -178,5 +178,6 @@ export async function everythingVisibleTo(u: TestUser) {
     family_members: await asUser(u.id, 'select * from public.family_members order by family_id, user_id'),
     gifts: await asUser(u.id, 'select * from public.gifts order by created_at, id'),
     claims: await asUser(u.id, 'select * from public.claims order by id'),
+    claim_notes: await asUser(u.id, 'select * from public.claim_notes order by gift_id'),
   };
 }
