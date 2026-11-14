@@ -22,10 +22,22 @@ export function FamilySwitcher({ current, families }: { current: FamilySummary; 
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 font-display text-2xl leading-tight [&::-webkit-details-marker]:hidden">
         <span aria-hidden="true">🎄</span>
         <span>{current.name}</span>
-        <span className="font-sans text-base text-white/85" aria-hidden="true">
-          ▾
+        <span className="ml-1 inline-flex min-h-10 items-center gap-1 rounded-full border-2 border-white/70 px-3 font-sans text-base font-semibold text-white group-open:bg-white group-open:text-pine">
+          Switch
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            className="size-5 transition-transform group-open:rotate-180"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 8l5 5 5-5" />
+          </svg>
         </span>
-        <span className="sr-only">(switch family)</span>
+        <span className="sr-only">(choose another family)</span>
       </summary>
       <div className="absolute left-0 z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] space-y-1 rounded-2xl border border-gold/60 bg-white p-2 text-ink shadow-lg">
         <p className="px-3 pt-1 text-base text-muted">Switch family</p>
